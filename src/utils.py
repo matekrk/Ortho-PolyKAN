@@ -20,7 +20,7 @@ def get_activation(activation: str):
         return torch.nn.Softplus()
     elif activation == "sigmoid":
         return torch.nn.Sigmoid()
-    elif activation == "swish":
+    elif activation == "swish" or activation == "silu":
         return torch.nn.SiLU()
     elif activation == "gelu":
         return torch.nn.GELU()

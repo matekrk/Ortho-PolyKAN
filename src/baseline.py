@@ -9,38 +9,159 @@ _CONV_OPTIONS = {"kernel_size": 3, "padding": 1, "stride": 1}
 
 class LeNet(nn.Module):
 
-    def __init__(self, n_classes = 10):
+    def __init__(self, input_shape: int = 1, output_shape: int = 10, activation: str = "relu", pooling: str = "max", softmax: bool = False):
         """
         LeNet(
-        (conv1): Conv2d(1, 6, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))
+        (conv1): Conv2d(input_shape[1], 6, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))
         (conv2): Conv2d(6, 16, kernel_size=(5, 5), stride=(1, 1))
         (fc1): Linear(in_features=400, out_features=120, bias=True)
         (fc2): Linear(in_features=120, out_features=84, bias=True)
-        (fc3): Linear(in_features=84, out_features=10, bias=True)
+        (fc3): Linear(in_features=84, out_features=output_shape(10), bias=True)
         )
         ==========================================================================================
         Total params: 61706
         """
         super(LeNet, self).__init__()
-        self.conv1 = nn.Conv2d(1, 6, 5, padding=2)
+        flat_features = 16 * 5 * 5 if input_shape == 1 else 16 * 6 * 6
+        self.conv1 = nn.Conv2d(input_shape, 6, 5, padding=2)
         self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1   = nn.Linear(16*5*5, 120)
+        self.fc1   = nn.Linear(flat_features, 120)
         self.fc2   = nn.Linear(120, 84)
-        self.fc3   = nn.Linear(84, n_classes)
+        self.fc3   = nn.Linear(84, output_shape)
 
-    def forward(self, x):
+        self.activation = get_activation(activation)
+        self.pooling = get_pooling(pooling)
+
+    def forward(self, x: torch.Tensor):
         """
         Args:
             x: input
         """
-        x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2)) #FIXME: Use get_activation, get_pooling
-        x = F.max_pool2d(F.relu(self.conv2(x)), (2, 2))
+        x = self.pooling(self.activation(self.conv1(x)))
+        x = self.pooling(self.activation(self.conv2(x)))
         x = x.flatten(start_dim=1) # x.view(-1, self.num_flat_features(x))
-        x = F.relu(self.fc1(x))
-        f = self.fc2(x)
-        x = F.relu(f)
+        x = self.activation(self.fc1(x))
+        x = self.activation(self.fc2(x))
         x = self.fc3(x)
         return x
+    
+class SkipSequential(nn.Module):
+    def __init__(self, *layers):
+        super().__init__()
+        self.layers = nn.Sequential(*layers)
+
+    def forward(self, x):
+        residual = x
+        for layer in self.layers:
+            x = layer(x)
+        return x + residual
+
+def r9_conv_block(in_channels, out_channels, activation="relu", pool="max"):
+    layers = [nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1), 
+              nn.BatchNorm2d(out_channels), 
+              get_activation(activation)]
+    if pool: layers.append(get_pooling(pool))
+    return nn.Sequential(*layers)
+
+class ResNet9(nn.Module):
+    def __init__(self, input_shape: int, output_shape: int, softmax: bool = False):
+        """
+        ResNet9(
+        (feature_extractor): Sequential(
+            (0): Sequential(
+            (0): Conv2d(input_shape[3], 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (2): ReLU()
+            (3): MaxPool2d(kernel_size=(2, 2), stride=(2, 2), padding=0, dilation=1, ceil_mode=False)
+            )
+            (1): Sequential(
+            (0): Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (2): ReLU()
+            (3): MaxPool2d(kernel_size=(2, 2), stride=(2, 2), padding=0, dilation=1, ceil_mode=False)
+            )
+            (2): SkipSequential(
+            (layers): Sequential(
+                (0): Sequential(
+                (0): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+                (1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (2): ReLU()
+                (3): MaxPool2d(kernel_size=(2, 2), stride=(2, 2), padding=0, dilation=1, ceil_mode=False)
+                )
+                (1): Sequential(
+                (0): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+                (1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (2): ReLU()
+                (3): MaxPool2d(kernel_size=(2, 2), stride=(2, 2), padding=0, dilation=1, ceil_mode=False)
+                )
+            )
+            )
+            (3): Sequential(
+            (0): Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (2): ReLU()
+            (3): MaxPool2d(kernel_size=(2, 2), stride=(2, 2), padding=0, dilation=1, ceil_mode=False)
+            )
+            (4): Sequential(
+            (0): Conv2d(256, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (1): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (2): ReLU()
+            (3): MaxPool2d(kernel_size=(2, 2), stride=(2, 2), padding=0, dilation=1, ceil_mode=False)
+            )
+            (5): SkipSequential(
+            (layers): Sequential(
+                (0): Sequential(
+                (0): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+                (1): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (2): ReLU()
+                (3): MaxPool2d(kernel_size=(2, 2), stride=(2, 2), padding=0, dilation=1, ceil_mode=False)
+                )
+                (1): Sequential(
+                (0): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+                (1): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (2): ReLU()
+                (3): MaxPool2d(kernel_size=(2, 2), stride=(2, 2), padding=0, dilation=1, ceil_mode=False)
+                )
+            )
+            )
+        )
+        (classifier): Sequential(
+            (0): AdaptiveMaxPool2d(output_size=(1, 1))
+            (1): Flatten(start_dim=1, end_dim=-1)
+            (2): Dropout(p=0.2, inplace=False)
+            (3): Linear(in_features=512, out_features=num_classes, bias=True)
+        )
+        )
+        """
+        super(ResNet9, self).__init__()
+        assert input_shape == 3
+        
+        self.feature_extractor = nn.Sequential(
+            r9_conv_block(input_shape, 64), # conv1
+            r9_conv_block(64, 128, pool="max"), # conv2
+            SkipSequential(r9_conv_block(128, 128), r9_conv_block(128, 128)), # res 1
+            r9_conv_block(128, 256, pool="max"), # conv3
+            r9_conv_block(256, 512, pool="max"), # conv4
+            SkipSequential(r9_conv_block(512, 512), r9_conv_block(512, 512)) # res 2
+        )
+        
+        classifier = [
+            nn.AdaptiveMaxPool2d((1,1)), 
+            nn.Flatten(), 
+            nn.Dropout(0.2),
+            nn.Linear(512, output_shape)
+        ]
+    
+        if softmax:
+            classifier.append(nn.Softmax(dim=-1))
+
+        self.classifier = nn.Sequential(*classifier)
+
+    def forward(self, x: torch.Tensor):
+        f = self.feature_extractor(x)
+        y = self.classifier(f)
+        return y
+        
 
 def num_pixels(dataset_name):
     return num_channels(dataset_name) * (image_size(dataset_name)**2)

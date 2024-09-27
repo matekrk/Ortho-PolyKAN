@@ -34,6 +34,9 @@ def prepare_data(data_str, root, train_batch_size, test_batch_size, arithmetic_l
     elif data_str == "mnist":
         train_loader, test_loader = prepare_mnist(root, train_batch_size, test_batch_size)
         return train_loader, test_loader
+    elif data_str == "fashion":
+        train_loader, test_loader = prepare_fashion(root, train_batch_size, test_batch_size)
+        return train_loader, test_loader
     elif data_str == "cifar10":
         train_loader, test_loader = prepare_cifar(root, train_batch_size, test_batch_size)
         return train_loader, test_loader
@@ -144,8 +147,8 @@ def prepare_fashion(root="./data", train_batch_size=64, test_batch_size=1024):
         transforms.Normalize((0.5,), (0.5,))
     ])
 
-    train_dataset = datasets.FashionMNIST(root=root, train=True, download=True, transform=transform)
-    test_dataset = datasets.FashionMNIST(root=root, train=False, download=True, transform=transform)
+    train_dataset = datasets.FashionMNIST(root=root, train=True, download=True, transform=transform, target_transform=OneHotEncodeTransform())
+    test_dataset = datasets.FashionMNIST(root=root, train=False, download=True, transform=transform, target_transform=OneHotEncodeTransform())
 
     train_loader = DataLoader(train_dataset, batch_size=train_batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=test_batch_size, shuffle=False)
@@ -163,8 +166,8 @@ def prepare_cifar(root="./data", train_batch_size=64, test_batch_size=1024):
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
 
-    train_dataset = datasets.CIFAR10(root=root, train=True, download=True, transform=transform)
-    test_dataset = datasets.CIFAR10(root=root, train=False, download=True, transform=transform)
+    train_dataset = datasets.CIFAR10(root=root, train=True, download=True, transform=transform, target_transform=OneHotEncodeTransform())
+    test_dataset = datasets.CIFAR10(root=root, train=False, download=True, transform=transform, target_transform=OneHotEncodeTransform())
 
     train_loader = DataLoader(train_dataset, batch_size=train_batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=test_batch_size, shuffle=False)
@@ -182,8 +185,8 @@ def prepare_svhn(root="./data", train_batch_size=64, test_batch_size=1024):
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
 
-    train_dataset = datasets.SVHN(root=root, train=True, download=True, transform=transform)
-    test_dataset = datasets.SVHN(root=root, train=False, download=True, transform=transform)
+    train_dataset = datasets.SVHN(root=root, split="train", download=True, transform=transform, target_transform=OneHotEncodeTransform())
+    test_dataset = datasets.SVHN(root=root, split="test", download=True, transform=transform, target_transform=OneHotEncodeTransform())
 
     train_loader = DataLoader(train_dataset, batch_size=train_batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=test_batch_size, shuffle=False)

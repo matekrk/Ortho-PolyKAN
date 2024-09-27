@@ -1,24 +1,27 @@
+from typing import Union, List
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 import math
+from utils import get_activation
 
-
-class KANLinear(torch.nn.Module):
+## LAYER
+class KANLayer(torch.nn.Module):
     def __init__(
         self,
         in_features,
         out_features,
+        base_activation="silu",
         grid_size=5,
         spline_order=3,
         scale_noise=0.1,
         scale_base=1.0,
         scale_spline=1.0,
         enable_standalone_scale_spline=True,
-        base_activation=torch.nn.SiLU,
         grid_eps=0.02,
         grid_range=[-1, 1],
     ):
-        super(KANLinear, self).__init__()
+        super(KANLayer, self).__init__()
         self.in_features = in_features
         self.out_features = out_features
         self.grid_size = grid_size
@@ -48,7 +51,7 @@ class KANLinear(torch.nn.Module):
         self.scale_base = scale_base
         self.scale_spline = scale_spline
         self.enable_standalone_scale_spline = enable_standalone_scale_spline
-        self.base_activation = base_activation()
+        self.base_activation = get_activation(base_activation)
         self.grid_eps = grid_eps
 
         self.reset_parameters()
@@ -150,7 +153,7 @@ class KANLinear(torch.nn.Module):
             else 1.0
         )
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor, update_grid = False):
         assert x.size(-1) == self.in_features
         original_shape = x.shape
         x = x.reshape(-1, self.in_features)
@@ -163,6 +166,8 @@ class KANLinear(torch.nn.Module):
         output = base_output + spline_output
         
         output = output.reshape(*original_shape[:-1], self.out_features)
+        if update_grid:
+                self.update_grid(x)
         return output
 
     @torch.no_grad()
@@ -236,50 +241,86 @@ class KANLinear(torch.nn.Module):
             + regularize_entropy * regularization_loss_entropy
         )
 
-
-class KAN(torch.nn.Module):
+## NETWORK
+class KANNetwork(torch.nn.Module):
     def __init__(
         self,
-        layers_hidden,
+        input_channels: int,
+        output_channels: int,
+        init_feature_extractor: bool,
+        layer_hidden: Union[KANLayer, List[KANLayer]],
+        neurons_hidden: List[int],
+        base_activation: str = "silu",
         grid_size=5,
         spline_order=3,
         scale_noise=0.1,
         scale_base=1.0,
         scale_spline=1.0,
-        base_activation=torch.nn.SiLU,
         grid_eps=0.02,
         grid_range=[-1, 1],
         flatten_input=True,
     ):
-        super(KAN, self).__init__()
+        super(KANNetwork, self).__init__()
+        self.input_channels = input_channels
         self.grid_size = grid_size
         self.spline_order = spline_order
         self.flatten_input = flatten_input
 
-        self.layers = torch.nn.ModuleList()
-        for in_features, out_features in zip(layers_hidden, layers_hidden[1:]):
-            self.layers.append(
-                KANLinear(
-                    in_features,
-                    out_features,
-                    grid_size=grid_size,
-                    spline_order=spline_order,
-                    scale_noise=scale_noise,
-                    scale_base=scale_base,
-                    scale_spline=scale_spline,
-                    base_activation=base_activation,
-                    grid_eps=grid_eps,
-                    grid_range=grid_range,
-                )
-            )
+        if init_feature_extractor:
+            self.conv_layers = self.make_conv_layers()
+            if self.input_channels == 1:
+                flat_features = 32 * 7 * 7
+            elif self.input_channels == 3:
+                flat_features = 32 * 8 * 8
+        else:
+            self.conv_layers = lambda x: x
+            flat_features = input_channels
+            if self.input_channels == 1:
+                flat_features = 1 * 28 * 28
+            elif self.input_channels == 3:
+                flat_features = 3 * 32 * 32
+
+        if issubclass(layer_hidden, KANLayer):
+            layer_hidden = [layer_hidden for _ in range(len(neurons_hidden)+1)]
+        else:
+            assert len(layer_hidden) == len(neurons_hidden) and all([isinstance(l, KANLayer) for l in layer_hidden])
+        if isinstance(base_activation, str):
+            base_activation = [base_activation for _ in range(len(neurons_hidden)+1)]
+        else:
+            assert len(base_activation) == len(neurons_hidden)
+
+        # assume all other params to be the same for all layers:
+        # grid_size, spline_order, scale_noise, scale_base, scale_spline, grid_eps, grid_range
+        
+
+        self.layers = nn.Sequential(*self.make_kan_layers(flat_features, output_channels, neurons_hidden, layer_hidden, base_activation,
+                                                          grid_size, spline_order, scale_noise, scale_base, scale_spline, grid_eps, grid_range))
+
+    def make_conv_layers(self, output_channels: int = 32, hidden_channels: int = 16, kernel_size: int = 3, stride: int = 1, padding: int = 1, maxpoolsize: int = 2):
+        # Convolutional encoder for initial feature extraction
+        return nn.Sequential(
+            nn.Conv2d(self.input_channels, hidden_channels, kernel_size=kernel_size, stride=stride, padding=padding),
+            nn.ReLU(),
+            nn.MaxPool2d(maxpoolsize, maxpoolsize),
+            nn.Conv2d(hidden_channels, output_channels, kernel_size=kernel_size, stride=stride, padding=padding),
+            nn.ReLU(),
+            nn.MaxPool2d(maxpoolsize, maxpoolsize),
+        )
+    
+    def make_kan_layers(self, input_channels, output_channels, neurons_hidden, layer_hiddens, base_activations,
+                        grid_size, spline_order, scale_noise, scale_base, scale_spline, grid_eps, grid_range):
+        layers = []
+        for i, (in_features, out_features) in enumerate(zip([input_channels] + neurons_hidden, neurons_hidden + [output_channels])):
+            layers.append(layer_hiddens[i](in_features, out_features, base_activations[i], 
+                                           grid_size, spline_order, scale_noise, scale_base, scale_spline, grid_eps, grid_range))
+        return layers
 
     def forward(self, x: torch.Tensor, update_grid=False):
+        x = self.conv_layers(x)
         if self.flatten_input:
             x = x.view(len(x), -1)
         for layer in self.layers:
-            if update_grid:
-                layer.update_grid(x)
-            x = layer(x)
+            x = layer(x, update_grid)
         return x
 
     def regularization_loss(self, regularize_activation=1.0, regularize_entropy=1.0):
