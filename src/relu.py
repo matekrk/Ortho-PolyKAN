@@ -1,5 +1,4 @@
 from typing import Union, List
-import numpy as np
 import torch
 import torch.nn as nn
 from utils import get_activation
@@ -12,24 +11,23 @@ class ReLUKANLayer(nn.Module):
         self.base_activation = get_activation(base_activation)
         self.grid_size, self.k, self.r = grid_size, k, 4*grid_size*grid_size / ((k+1)*(k+1))
         self.in_features, self.out_features = in_features, out_features
-        phase_low = np.arange(-self.k, self.grid_size) / self.grid_size
+        phase_low = torch.arange(-self.k, self.grid_size) / self.grid_size
         phase_height = phase_low + (self.k+1) / self.grid_size
-        self.phase_low = nn.Parameter(torch.Tensor(np.array([phase_low for i in range(in_features)])),
-                                      requires_grad=train_boundaries)
-        self.phase_height = nn.Parameter(torch.Tensor(np.array([phase_height for i in range(in_features)])),
-                                         requires_grad=train_boundaries)
+        self.phase_low = nn.Parameter(phase_low[None, :].expand(in_features, -1).clone(), requires_grad=train_boundaries)
+        self.phase_height = nn.Parameter(phase_height[None, :].expand(in_features, -1).clone(), requires_grad=train_boundaries)
         
         self.hidden_dim = 1
         self.equal_size_conv = nn.Conv2d(self.hidden_dim, out_features, (self.grid_size+self.k, in_features))
         
     def forward(self, x: torch.Tensor):
-        x1 = self.base_activation(x - self.phase_low)
-        x2 = self.base_activation(self.phase_height - x)
+        x_expanded = x.unsqueeze(2).expand(-1, -1, self.phase_low.size(1))
+        x1 = self.base_activation(x_expanded - self.phase_low)
+        x2 = self.base_activation(self.phase_height - x_expanded)
         x = x1 * x2 * self.r
         x = x * x
         x = x.reshape((len(x), 1, self.grid_size + self.k, self.in_features))
         x = self.equal_size_conv(x)
-        x = x.reshape((len(x), self.out_features, 1))
+        x = x.reshape((len(x), self.out_features))
         return x
 
 ## NETWORK
@@ -77,6 +75,17 @@ class ReLUKANNetwork(nn.Module):
 
         self.layers = nn.Sequential(*self.make_relu_layers(flat_features, output_channels, neurons_hidden, layer_hidden, base_activation, relu_grid_size, relu_k, relu_train_boundary))
 
+    def make_conv_layers(self, output_channels: int = 32, hidden_channels: int = 16, kernel_size: int = 3, stride: int = 1, padding: int = 1, maxpoolsize: int = 2):
+        # Convolutional encoder for initial feature extraction
+        return nn.Sequential(
+            nn.Conv2d(self.input_channels, hidden_channels, kernel_size=kernel_size, stride=stride, padding=padding),
+            nn.ReLU(),
+            nn.MaxPool2d(maxpoolsize, maxpoolsize),
+            nn.Conv2d(hidden_channels, output_channels, kernel_size=kernel_size, stride=stride, padding=padding),
+            nn.ReLU(),
+            nn.MaxPool2d(maxpoolsize, maxpoolsize),
+        )
+
     def make_relu_layers(self, input_channels, output_channels, neurons_hidden, layer_hiddens, base_activations, relu_grid_sizes, relu_ks, relu_train_boundaries):
         layers = []
         for i, (in_features, out_features) in enumerate(zip([input_channels] + neurons_hidden, neurons_hidden + [output_channels])):
@@ -86,6 +95,6 @@ class ReLUKANNetwork(nn.Module):
     def forward(self, x: torch.Tensor):
 
         x = self.conv_layers(x)
-        x = x.view(x.size(0), -1)
+        x = x.flatten(start_dim=1)
         x = self.layers(x)
         return x.squeeze(dim=-1)

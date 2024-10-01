@@ -1,3 +1,5 @@
+import os
+from datetime import datetime
 import argparse
 import torch
 
@@ -17,6 +19,7 @@ def main():
     parser.add_argument("--arithmetic_id", type=int, default=1, help="For arithmetic dataset which function to choose, in figures visualizations provided")
     parser.add_argument("--arithmetic_dim", type=int, default=1, help="For arithmetic dataset the dimensionality")
     parser.add_argument("--arithmetic_test_shuffle", action="store_true", help="Way to determine arithmetic test set")
+    parser.add_argument("--data_path", type=str, default="./data", help="Where to store sets")
 
     parser.add_argument("--verbose", action="store_true", help="Increase logger verbosity")
     parser.add_argument("--save_model", action="store_true", help="Save model towards the end of training")
@@ -72,8 +75,7 @@ def main():
         print(f"Experiment: testing")
 
     device = "cuda" if args.cuda and torch.cuda.is_available() else "cpu"
-    data_root = "data/"
-    train_loader, test_loader = prepare_data(args.data_str, data_root, args.train_batch_size, args.test_batch_size, args.arithmetic_id, args.arithmetic_dim)
+    train_loader, test_loader = prepare_data(args.data_str, args.data_path, args.train_batch_size, args.test_batch_size, args.arithmetic_id, args.arithmetic_dim)
     
     model_kwargs = args
     model = prepare_model(**vars(model_kwargs))
@@ -92,11 +94,15 @@ def main():
         print("Processing evaluation")
     evaluate(model, test_loader, criterion, device, compute_accuracy_fn)
 
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    os.makedirs("models", exist_ok=True)
+    os.makedirs("figures", exist_ok=True)
+
     if args.save_model:
-        torch.save(model.state_dict(), "models/last_model.pt")
+        torch.save(model.state_dict(), f"models/last_model_{timestamp}.pt")
 
     fig = plot_training(train_losses, test_losses, train_accs, test_accs, running_losses)
-    fig.savefig("figures/last_training.png")
+    fig.savefig(f"figures/last_training_{timestamp}.png")
 
 
 if __name__ == "__main__":

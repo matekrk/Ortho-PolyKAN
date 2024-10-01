@@ -16,7 +16,7 @@ The code is based on:
 - ``` python src/main.py baseline_fc fashion --save_model --cuda --seed 8 --objective_str mse --optimizer_str adam --lr 0.0005 --n_epochs 3 --widths 64 16 --activation elu ```
 - ``` python src/main.py baseline_conv mnist --verbose --save_model --cuda --objective_str ce --optimizer_str sgd --lr 0.001 --n_epochs 2 --widths 16 16 --bn --activation leaky_relu --pooling max ```
 - ``` python src/main.py kan_vanilla mnist --cuda --objective_str ce --optimizer_str adam --lr 0.001 --n_epochs 2 --widths 784 64 10 --activation silu ```
-- ``` python src/main.py kan_relu mnist --cuda --objective_str ce --optimizer_str adam --lr 0.001 --n_epochs 2 --widths 784 64 10 --activation relu --relu_grid_size 5 --relu_k 3 --relu_train_boundary```
+- ``` python src/main.py kan_relu mnist --cuda --objective_str ce --optimizer_str adam --lr 0.001 --n_epochs 2 --widths 64 10 --activation relu --relu_grid_size 5 --relu_k 3 --relu_train_boundary --init_feature_extractor --verbose ```
 - ``` python src/main.py kan_chebyshev mnist --seed 42 --cuda --objective_str mse --optimizer_str adam --lr 0.001 --n_epochs 2 --widths 64 64 --activation relu --init_feature_extractor --polynomial_order 4 --layer_norm```
 - ``` python src/main.py kan_legendre svhn --seed 42 --cuda --objective_str mse --optimizer_str adam --lr 0.001 --n_epochs 2 --widths 64 64 --activation gelu --init_feature_extractor --polynomial_order 4 --layer_norm```
 
@@ -26,7 +26,8 @@ The code is based on:
 - [x] support cifar and svhn
 - [ ] support other datasets
 - [x] make splines, KANlinears etc. universal accross KAN types
-- [ ] fix relu kan equal_size_conv
+- [ ] add conv layer @mmiezianko
+- [x] fix relu kan equal_size_conv
 - [ ] save the optimal models / hyperparams
 - [x] legendre|chebyshev polynomials
 - [ ] wandb logger
