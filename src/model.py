@@ -2,13 +2,14 @@
 from baseline import LeNet, Fully_connected_net, Fully_connected_net_bn, Convnet, Convnet_bn
 from cheby import MNISTChebyKAN
 from kan import KAN
-from legendre import LegendreKAN
+# from legendre import LegendreKAN
 from relukan import ReLUKAN
 
 def prepare_model_mnist(model_str, **kwargs):
     num_classes = 10
     if model_str == "baseline_lenet":
-        model = LeNet(num_classes = 10)
+        # model = LeNet(num_classes = 10)
+        model = LeNet()
     elif model_str == "baseline_fc":
         if kwargs["bn"]:
             model = Fully_connected_net_bn("mnist", num_classes, kwargs["widths"], kwargs["activation"], kwargs["bias"])
