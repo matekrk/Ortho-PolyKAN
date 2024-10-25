@@ -20,10 +20,11 @@ def get_activation(activation: str):
         return torch.nn.Softplus()
     elif activation == "sigmoid":
         return torch.nn.Sigmoid()
-    elif activation == "swish":
+    elif activation == "swish" or activation == "silu":
         return torch.nn.SiLU()
     elif activation == "gelu":
         return torch.nn.GELU()
+  
     else:
         raise NotImplementedError("unknown activation function: {}".format(activation))
 
@@ -39,7 +40,7 @@ def classification_accuracy(pred, y):
     return (predicted == label).sum().item() / len(pred)
 
 
-def plot_training(train_losses, test_losses, train_accuracies, test_accuracies, running_losses = None):
+def plot_training(train_losses, test_losses, train_accuracies, test_accuracies, execution_time, model_name, running_losses = None):
     
     nrows = 2 if running_losses is not None else 1
     fig, axs = plt.subplots(nrows, 2, figsize=(10, 8), gridspec_kw={'height_ratios': [1, 2], 'width_ratios': [1, 1]} if nrows == 2 else None)
@@ -66,9 +67,48 @@ def plot_training(train_losses, test_losses, train_accuracies, test_accuracies, 
         axs[1, 0].legend()
 
         axs[1, 1].remove() #FIXME: or ax3 = plt.subplot2grid((2, 2), (1, 0), colspan=2)
+    fig.text(0.5, 0.01, f'Total Execution Time: {execution_time:.2f} seconds', ha='center', fontsize=12)
+    fig.text(0.5, 0.97, f'Model: {model_name}', ha='center', fontsize=12)
 
     plt.tight_layout()
     return fig
+
+# def plot_training(train_losses, test_losses, train_accuracies, test_accuracies, execution_time,model_name, running_losses=None):
+    
+#     nrows = 2 if running_losses is not None else 1
+#     fig, axs = plt.subplots(nrows, 2, figsize=(10, 8), gridspec_kw={'height_ratios': [1, 2], 'width_ratios': [1, 1]} if nrows == 2 else None)
+    
+#     # Plot training and test losses
+#     axs[0, 0].plot(train_losses, marker='o', linestyle='-', color='r', label="train")
+#     axs[0, 0].plot(test_losses, marker='o', linestyle='-', color='g', label="test")
+#     axs[0, 0].set_title('Loss')
+#     axs[0, 0].set_xlabel('Iteration')
+#     axs[0, 0].set_ylabel('Loss')
+#     axs[0, 0].legend()
+
+#     # Plot training and test accuracies
+#     axs[0, 1].plot(train_accuracies, marker='o', linestyle='-', color='r', label="train")
+#     axs[0, 1].plot(test_accuracies, marker='o', linestyle='-', color='g', label="test")
+#     axs[0, 1].set_title('Accuracy')
+#     axs[0, 1].set_xlabel('Iteration')
+#     axs[0, 1].set_ylabel('Accuracy')
+#     axs[0, 1].legend()
+
+#     # Plot running losses if provided
+#     if nrows == 2:
+#         axs[1, 0].plot(running_losses, color='r', label="train")
+#         axs[1, 0].set_title('Loss')
+#         axs[1, 0].set_xlabel('Iteration')
+#         axs[1, 0].set_ylabel('Loss')
+#         axs[1, 0].legend()
+#         axs[1, 1].remove()
+
+#     # Add the execution time as a text box on the figure
+#     fig.text(0.5, 0.01, f'Total Execution Time: {execution_time:.2f} seconds', ha='center', fontsize=12)
+#     fig.text(0.5, 0.95, f'Model: {model_name}', ha='center', fontsize=14)
+#     plt.tight_layout()
+#     return fig
+
 
 
 def plot_aggregate(experiments):
