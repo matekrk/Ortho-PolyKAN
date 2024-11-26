@@ -58,6 +58,7 @@ def main():
     parser.add_argument("--relu_grid_size", type=int, help="ReLU KAN: grid size")
     parser.add_argument("--relu_k", type=int, help="ReLU KAN: spline degree")
     parser.add_argument("--relu_train_boundary", action="store_true", help="ReLU KAN: train [a,b] boundary parameters")
+    parser.add_argument("--relu_apply_interactions", type=bool, nargs='+', help="ReLU KAN with interactions: define interactions layers")
     # kan_polynomial
     parser.add_argument("--polynomial_order", type=int, help="Polynomial KAN: degree of the polynomials")
     # kan_chebykan
@@ -115,3 +116,19 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+#do jakich wartości znormalizowanyc jest mnist
+#spr grid i k (grid jak duzo funkcji bazowych) -> zobacz czy funkcje bazowe dziedzina funkcji bazowych pokrywa sie z dziedzina mnista
+#zdebuguj co się dzieje w kan_vanilla, kiedy dodajesz interakcje do output forwarda (gradienty np spr)
+#python src/main.py kan_relu mnist --data_path /shared/sets/datasets/vision/ --cuda --objective_str ce --optimizer_str adam --lr 0.0001 --n_epochs 2 --widths 64 10 --activation relu --relu_grid_size 5 --relu_k 3 --relu_train_boundary --init_feature_extractor --verbose ####jak cos komenda do relu kan (ktora chyba daje ok wyniki)
+
+
+
+#NA za tydzien: 
+#dodaj parametr uczący się alpha do interakcji  !!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+#learning rate weight decay 
+#relu kany 
+

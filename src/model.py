@@ -6,7 +6,7 @@ from chebyshev import ChebyLayer
 from legendre import LegendreLayer
 from polynomial import PolynomialNetwork
 from conv import KAN_Convolutional_Layer, KAN_ConvolutionNetwork, KANC_MLP
-from ineractions import  CustomReLUKANLayer, CustomKANLayer
+from ineractions import  CustomReLUKANLayer,CustomReLUKANNetwork
 
 def prepare_model(model_str, **kwargs):
     if kwargs["data_str"] in ["mnist", "fashion"]:
@@ -62,13 +62,17 @@ def prepare_model(model_str, **kwargs):
         elif model_str == "kan_relu_interactions":
           
             layer = CustomReLUKANLayer
-            model = ReLUKANNetwork(input_channels, num_classes, init_feature_extractor, 
+            model = CustomReLUKANNetwork(input_channels, num_classes, init_feature_extractor, 
                         layer_hidden = layer, 
                         neurons_hidden = neurons_hidden, 
                         base_activation = base_activation,
                         relu_grid_size = kwargs["relu_grid_size"],
                         relu_k = kwargs["relu_k"],
-                        relu_train_boundary=kwargs["relu_train_boundary"])
+                        relu_train_boundary=kwargs["relu_train_boundary"],
+                        # apply_interactions_layers= kwargs["relu_apply_interactions"]
+                        apply_interactions_layers= [True, False, False] #TODO: parse as kwargs
+                        )
+            print(f"Liczba warstw w modelu: {len(model.layers)}")
             # layer = CustomKANLayer
             # model = KANNetwork(input_channels, num_classes, init_feature_extractor, 
             #             layer_hidden = layer,

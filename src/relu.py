@@ -20,16 +20,20 @@ class ReLUKANLayer(nn.Module):
         self.equal_size_conv = nn.Conv2d(self.hidden_dim, out_features, (self.grid_size+self.k, in_features))
         
     def forward(self, x: torch.Tensor):
+        print(f"infeature : {self.in_features}") 
         x_expanded = x.unsqueeze(2).expand(-1, -1, self.phase_low.size(1))
         x1 = self.base_activation(x_expanded - self.phase_low)
         x2 = self.base_activation(self.phase_height - x_expanded)
         x = x1 * x2 * self.r
         x = x * x
+        #b=x * x
+        
         x = x.reshape((len(x), 1, self.grid_size + self.k, self.in_features))
         x = self.equal_size_conv(x)
+        #phi = self.equal_size_conv(x)
+        #phi_star = phi + (alpha*b)@b.T
         x = x.reshape((len(x), self.out_features))
         return x
-    
 
 ## NETWORK
 class ReLUKANNetwork(nn.Module):
@@ -87,7 +91,7 @@ class ReLUKANNetwork(nn.Module):
             nn.MaxPool2d(maxpoolsize, maxpoolsize),
         )
 
-    def make_relu_layers(self, input_channels, output_channels, neurons_hidden, layer_hiddens, base_activations, relu_grid_sizes, relu_ks, relu_train_boundaries):
+    def make_relu_layers(self, input_channels, output_channels, neurons_hidden, layer_hiddens, base_activations, relu_grid_sizes, relu_ks, relu_train_boundaries, apply_interactions_layers=None):
         layers = []
         for i, (in_features, out_features) in enumerate(zip([input_channels] + neurons_hidden, neurons_hidden + [output_channels])):
             layers.append(layer_hiddens[i](in_features, out_features, base_activations[i], relu_grid_sizes[i], relu_ks[i], relu_train_boundaries[i]))
@@ -95,7 +99,10 @@ class ReLUKANNetwork(nn.Module):
 
     def forward(self, x: torch.Tensor):
 
+        print(f"Input shape before conv: {x.shape}")
         x = self.conv_layers(x)
+        print(f"Shape after conv: {x.shape}")
         x = x.flatten(start_dim=1)
+        print(f"x flatten: {x.shape}")
         x = self.layers(x)
         return x.squeeze(dim=-1)

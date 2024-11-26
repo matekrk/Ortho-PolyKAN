@@ -155,6 +155,7 @@ class KANLayer(torch.nn.Module):
 
     
     def forward(self, x: torch.Tensor, update_grid = False):
+        print(f"infeature : {self.in_features}") 
         assert x.size(-1) == self.in_features
         original_shape = x.shape
         x = x.reshape(-1, self.in_features)
