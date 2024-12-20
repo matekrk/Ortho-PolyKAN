@@ -14,11 +14,6 @@ class CustomReLUKANLayer(ReLUKANLayer):
     def __init__(self, in_features: int, out_features: int, base_activation: str, grid_size: int, k: int, train_boundaries: bool = True,apply_interaction=True):
         super(CustomReLUKANLayer, self).__init__(in_features, out_features, base_activation, grid_size, k, train_boundaries)
         
-        # phase_low = torch.arange(-self.k, self.grid_size) / self.grid_size
-        # phase_height = phase_low + (self.k+1) / self.grid_size
-        # self.phase_low = nn.Parameter(phase_low[None, :].expand(in_features, -1).clone(), requires_grad=train_boundaries)
-        # self.phase_height = nn.Parameter(phase_height[None, :].expand(in_features, -1).clone(), requires_grad=train_boundaries)
-        
   
         self.alpha = nn.Parameter(torch.randn(out_features, out_features))  
         self.apply_interaction = apply_interaction
@@ -32,14 +27,14 @@ class CustomReLUKANLayer(ReLUKANLayer):
         self.equal_size_conv_no_params.bias.requires_grad = False    # Zamrażamy bias
 
     def forward(self, x: torch.Tensor, apply_interactions: bool = False):
-        print(f"infeature : {self.in_features}") 
-        print(f"outfeature : {self.out_features}") 
-        print(f"k : {self.k}") 
-        print(f"x : {x.shape}") 
+        # print(f"infeature : {self.in_features}") 
+        # print(f"outfeature : {self.out_features}") 
+        # print(f"k : {self.k}") 
+        # print(f"x : {x.shape}") 
         
         # Original basis function computation (with change in Eq 11???)
         x_expanded = x.unsqueeze(2).expand(-1, -1, self.phase_low.size(1))
-        print(f"x_expanded : {x_expanded.shape}") 
+        # print(f"x_expanded : {x_expanded.shape}") 
         #Eq 9
         x1 = self.base_activation(x_expanded - self.phase_low)
         #Eq 10
@@ -48,14 +43,14 @@ class CustomReLUKANLayer(ReLUKANLayer):
         x = x1 * x2 * self.r 
         # Eq 12
         x = x * x  
-        print(f"F : {x.shape}") #check out 1568 (concatenated?)
+        print(f"F : {x.shape}") #1568 due to init extractor flag
         # Eq 13
         x = x.reshape((len(x), 1, self.grid_size + self.k, self.in_features))
-        print(f"reshaped x : {x.shape}") 
-        phi = self.equal_size_conv(x) #consider changing conv to Eq 13 directly, przemnóż każdą zmienną * każdą chcemy aby miało 64,10
-        print(f"phi : {phi.shape}") 
+        # print(f"reshaped x : {x.shape}") 
+        phi = self.equal_size_conv(x) 
+        # print(f"phi : {phi.shape}") 
         phi = phi.reshape((len(phi), self.out_features))
-        print(f"reshaped phi : {phi.shape}") 
+        # print(f"reshaped phi : {phi.shape}") 
 
           ### Added ###
         if self.apply_interaction:
@@ -64,13 +59,10 @@ class CustomReLUKANLayer(ReLUKANLayer):
                 B = self.equal_size_conv_no_params(x)
                 B = B.reshape((len(B), self.out_features))
                 
-
-            
                 # Mnożenie każdej zmiennej przez każdą zmienną
                 interaction = torch.einsum('bi,bj->bij', phi, phi)  # Rozmiar: batch_size x out_features x out_features
                 
                 
-
                 # Używa wyrażenia bi,bj->bij, które oznacza: dla każdej próbki w batchu (b), weź każdą funkcję wyjściową 
                 # i przemnóż ją przez każdą funkcję wyjściową j.
                 
@@ -79,11 +71,11 @@ class CustomReLUKANLayer(ReLUKANLayer):
 
                 # print(phi_outer==interaction)
 
-                print(f" interaction shape : {interaction.shape}") 
+                # print(f" interaction shape : {interaction.shape}") 
 
                 weighted_interaction =  interaction * self.alpha    # Element-wise multiplication
 
-                print(f" weighted interaction  : {weighted_interaction.shape}") 
+                # print(f" weighted interaction  : {weighted_interaction.shape}") 
 
                 # Jeśli wagi mają wpływać na sumaryczne interakcje między zmiennymi, używamy sumowania przed mnożeniem.
                 # Jeśli wagi mają wpływać na każdą indywidualną interakcję, używamy sumowania po mnożeniu.

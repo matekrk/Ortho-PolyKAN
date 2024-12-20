@@ -3,6 +3,9 @@ from matplotlib import pyplot as plt
 from tqdm import tqdm
 import torch
 
+
+
+
 def get_activation(activation: str):
     if activation == 'relu':
         return torch.nn.ReLU()
@@ -34,17 +37,75 @@ def get_pooling(pooling: str):
     elif pooling == 'average':
         return torch.nn.AvgPool2d((2, 2))
 
+# def classification_accuracy(pred, y):
+#     _, predicted = torch.max(pred.data, 1)
+#     _, label = torch.max(y.data, 1)
+#     return (predicted == label).sum().item() / len(pred)
+
 def classification_accuracy(pred, y):
-    _, predicted = torch.max(pred.data, 1)
-    _, label = torch.max(y.data, 1)
-    return (predicted == label).sum().item() / len(pred)
-
-
-def plot_training(train_losses, test_losses, train_accuracies, test_accuracies, execution_time, model_name, running_losses = None):
+    print(f"pred:{pred}")
+    print(f"y:{y}")
+    if pred.dim() > 1 and pred.size(1) > 1:  
+        _, predicted = torch.max(pred.data, 1)
+    else:
+        predicted = (pred >= 0.5).long()
     
-    nrows = 2 if running_losses is not None else 1
-    fig, axs = plt.subplots(nrows, 2, figsize=(10, 8), gridspec_kw={'height_ratios': [1, 2], 'width_ratios': [1, 1]} if nrows == 2 else None)
+    if y.dim() > 1 and y.size(1) > 1:
+        _, label = torch.max(y.data, 1)
+    else:
+        label = y.long()  # Zakładamy, że y jest już w formacie klas
 
+
+    correct = (predicted == label).sum().item()
+    accuracy = correct / len(pred)
+    return accuracy
+
+
+
+# def plot_training(train_losses, test_losses, train_accuracies, test_accuracies, execution_time, model_name, dataset_name, running_losses = None, relu_interactions = None):
+    
+#     nrows = 2 if running_losses is not None else 1
+#     fig, axs = plt.subplots(nrows, 2, figsize=(13, 11), gridspec_kw={'height_ratios': [1, 2], 'width_ratios': [1, 1]} if nrows == 2 else None)
+
+#     axs[0, 0].plot(train_losses, marker='o', linestyle='-', color='r', label="train")
+#     axs[0, 0].plot(test_losses, marker='o', linestyle='-', color='g', label="test")
+#     axs[0, 0].set_title('Loss')
+#     axs[0, 0].set_xlabel('Iteration')
+#     axs[0, 0].set_ylabel('Loss')
+#     axs[0, 0].legend()
+
+#     axs[0, 1].plot(train_accuracies, marker='o', linestyle='-', color='r', label="train")
+#     axs[0, 1].plot(test_accuracies, marker='o', linestyle='-', color='g', label="test")
+#     axs[0, 1].set_title('Accuracy')
+#     axs[0, 1].set_xlabel('Iteration')
+#     axs[0, 1].set_ylabel('Accuracy')
+#     axs[0, 1].legend()
+
+#     if nrows == 2:
+#         axs[1, 0].plot(running_losses, color='r', label="train")
+#         axs[1, 0].set_title('Loss')
+#         axs[1, 0].set_xlabel('Iteration')
+#         axs[1, 0].set_ylabel('Loss')
+#         axs[1, 0].legend()
+
+#         axs[1, 1].remove() #FIXME: or ax3 = plt.subplot2grid((2, 2), (1, 0), colspan=2)
+#     fig.text(0.5, 0.01, f'Total Execution Time: {execution_time:.2f} seconds', ha='center', fontsize=12)
+#     if relu_interactions is not None:
+#         fig.text(0.5, 0.97, f'Model: {model_name}, dataset: {dataset_name}, layer has interaction: {relu_interactions}', ha='center', fontsize=12)
+#     else: 
+#         fig.text(0.5, 0.97, f'Model: {model_name}, dataset: {dataset_name}', ha='center', fontsize=12)
+   
+
+   
+
+#     plt.tight_layout()
+#     return fig
+
+def plot_training(train_losses, test_losses, train_accuracies, test_accuracies, execution_time, model_name, dataset_name, running_losses=None, relu_interactions=None):
+    nrows = 2 if running_losses is not None else 1
+    fig, axs = plt.subplots(nrows, 2, figsize=(13, 11), gridspec_kw={'height_ratios': [1, 2], 'width_ratios': [1, 1]} if nrows == 2 else None)
+
+    # Loss plot
     axs[0, 0].plot(train_losses, marker='o', linestyle='-', color='r', label="train")
     axs[0, 0].plot(test_losses, marker='o', linestyle='-', color='g', label="test")
     axs[0, 0].set_title('Loss')
@@ -52,6 +113,7 @@ def plot_training(train_losses, test_losses, train_accuracies, test_accuracies, 
     axs[0, 0].set_ylabel('Loss')
     axs[0, 0].legend()
 
+    # Accuracy plot
     axs[0, 1].plot(train_accuracies, marker='o', linestyle='-', color='r', label="train")
     axs[0, 1].plot(test_accuracies, marker='o', linestyle='-', color='g', label="test")
     axs[0, 1].set_title('Accuracy')
@@ -59,19 +121,26 @@ def plot_training(train_losses, test_losses, train_accuracies, test_accuracies, 
     axs[0, 1].set_ylabel('Accuracy')
     axs[0, 1].legend()
 
+    # Running losses plot
     if nrows == 2:
         axs[1, 0].plot(running_losses, color='r', label="train")
-        axs[1, 0].set_title('Loss')
+        axs[1, 0].set_title('Running Loss')
         axs[1, 0].set_xlabel('Iteration')
         axs[1, 0].set_ylabel('Loss')
         axs[1, 0].legend()
 
-        axs[1, 1].remove() #FIXME: or ax3 = plt.subplot2grid((2, 2), (1, 0), colspan=2)
-    fig.text(0.5, 0.01, f'Total Execution Time: {execution_time:.2f} seconds', ha='center', fontsize=12)
-    fig.text(0.5, 0.97, f'Model: {model_name}', ha='center', fontsize=12)
+        axs[1, 1].axis("off")  # Disable unused subplot instead of removing it
 
-    plt.tight_layout()
+    # Adding text
+    fig.suptitle(f'Model: {model_name}, Dataset: {dataset_name}', fontsize=16, y=0.95)
+    fig.text(0.5, 0.02, f'Total Execution Time: {execution_time:.2f} seconds', ha='center', fontsize=14)
+    if relu_interactions is not None:
+        fig.text(0.5, 0.98, f'Layer with Interaction: {relu_interactions}', ha='center', fontsize=14)
+
+    # Adjust layout
+    plt.tight_layout(rect=[0, 0.04, 1, 0.94])  # Leave space for suptitle and bottom text
     return fig
+
 
 # def plot_training(train_losses, test_losses, train_accuracies, test_accuracies, execution_time,model_name, running_losses=None):
     

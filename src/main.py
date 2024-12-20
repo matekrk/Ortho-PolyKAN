@@ -9,13 +9,17 @@ from train import prepare_train, train
 from evaluate import evaluate
 from utils import plot_training, classification_accuracy
 import time
+def str_to_bool_list(value):
+    """Convert a comma-separated string into a list of booleans."""
+    return [v.strip().lower() == 'true' for v in value.split(',')]
+
 
 def main():
     parser = argparse.ArgumentParser(description="Main method for Ortho PolyKAN")
     
     # Add arguments
     parser.add_argument("model_str", type=str, choices=["baseline_lenet", "baseline_resnet", "baseline_fc", "baseline_conv", "kan_vanilla", "kan_relu", "kan_polynomial", "kan_chebyshev", "kan_legendre", "kan_convolution", "kan_relu_interactions"], help="Which architecture")
-    parser.add_argument("data_str", type=str, choices=["arithmetic", "conti-arithmetic", "mnist", "fashion", "cifar10", "svhn"], help="Data to train")
+    parser.add_argument("data_str", type=str, choices=["arithmetic", "conti-arithmetic", "mnist", "fashion", "cifar10", "svhn", "titanic", "toxicity", "speech_command", "bean", "income"], help="Data to train")
     parser.add_argument("--arithmetic_len", type=int, default=1, help="Size of arithmetic dataset")
     parser.add_argument("--arithmetic_id", type=int, default=1, help="For arithmetic dataset which function to choose, in figures visualizations provided")
     parser.add_argument("--arithmetic_dim", type=int, default=1, help="For arithmetic dataset the dimensionality")
@@ -46,7 +50,7 @@ def main():
     # kan
     parser.add_argument("--init_feature_extractor", action="store_true", help="Start KAN net with CNN block")
     parser.add_argument("--layer_norm", action="store_true", help="whether to use layer norm or batch norm")
-    parser.add_argument("--interactions", type=bool, help="Interactions between variables")
+    # parser.add_argument("--interactions", type=bool, help="Interactions between variables")
 
     # kan_vaniila
     parser.add_argument("--grid_size", type=int, default=5, help="Vanilla KAN: ")
@@ -58,9 +62,10 @@ def main():
     parser.add_argument("--relu_grid_size", type=int, help="ReLU KAN: grid size")
     parser.add_argument("--relu_k", type=int, help="ReLU KAN: spline degree")
     parser.add_argument("--relu_train_boundary", action="store_true", help="ReLU KAN: train [a,b] boundary parameters")
-    parser.add_argument("--relu_apply_interactions", type=bool, nargs='+', help="ReLU KAN with interactions: define interactions layers")
+    parser.add_argument("--relu_apply_interactions",type=str_to_bool_list, default=None, help="Comma-separated list of booleans for apply_interactions_layers, e.g., True,False,False",)
     # kan_polynomial
     parser.add_argument("--polynomial_order", type=int, help="Polynomial KAN: degree of the polynomials")
+   
     # kan_chebykan
     # kan_legendre
     
@@ -110,7 +115,7 @@ def main():
         torch.save(model.state_dict(), f"models/last_model_{timestamp}.pt")
 
     # fig = plot_training(train_losses, test_losses, train_accs, test_accs, running_losses)
-    fig = plot_training(train_losses, test_losses, train_accs, test_accs, execution_time, args.model_str, running_losses)
+    fig = plot_training(train_losses, test_losses, train_accs, test_accs, execution_time, args.model_str, args.data_str, running_losses, args.relu_apply_interactions)
     fig.savefig(f"figures/last_training_{timestamp}.png")
 
 

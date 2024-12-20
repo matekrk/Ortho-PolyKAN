@@ -4,6 +4,16 @@ import torch
 import torch.nn.functional as F
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader, Subset, TensorDataset
+import torchaudio
+# torchtext
+
+
+from datasets_preparation.titanic import TitanicDataset
+from datasets_preparation.uciml import from_uciml_to_dataset
+from datasets_preparation.special import get_scipyfunction_dataset, get_special_dataset_1d
+from datasets_preparation.pca_dataset import get_pca_dataset
+# from datasets_preparation.text import create_text_loader, get_IMDb_dataset
+from datasets_preparation.audio import SubsetSC, get_SC_loader, get_US_dataset
 
 def prepare_data(data_str, root, train_batch_size, test_batch_size, arithmetic_len: int = 10000, arithmetic_id: int = None, arithmetic_dim: int = 1, arithmetic_test_shuffle: bool = False):
     if data_str == "arithmetic":
@@ -43,7 +53,29 @@ def prepare_data(data_str, root, train_batch_size, test_batch_size, arithmetic_l
     elif data_str == "svhn":
         train_loader, test_loader = prepare_svhn(root, train_batch_size, test_batch_size)
         return train_loader, test_loader
+    
+    elif data_str == "titanic":
+        train_loader, test_loader = prepare_titanic(train_batch_size, test_batch_size)
+        return train_loader, test_loader
+    elif data_str== "toxicity":
+        train_loader, test_loader = prepare_toxicity(train_batch_size, test_batch_size)
+        return train_loader, test_loader
+    elif data_str== "speech_command":
+        train_loader, test_loader = prepare_speechcommand(train_batch_size, test_batch_size)
+        return train_loader, test_loader
+    elif data_str ==  "ag_news":
+        train_loader, test_loader = prepare_ag_news(train_batch_size, test_batch_size)
+        return train_loader, test_loader
+    
+    elif data_str ==   "bean":
+        train_loader, test_loader = prepare_bean(train_batch_size, test_batch_size)
+        return train_loader, test_loader
+    
+    elif data_str ==   "income":
+        train_loader, test_loader = prepare_income(train_batch_size, test_batch_size)
+        return train_loader, test_loader
 
+        
 """
 simple
 """
@@ -116,6 +148,108 @@ class OneHotEncodeTransform:
 
     def __call__(self, label):
         return F.one_hot(torch.tensor(label), num_classes=self.num_classes).float()
+    
+# TODO:
+
+
+
+"""
+AG_NEWS
+"""
+def prepare_ag_news(train_batch_size=64, test_batch_size=1024):
+
+        train_dataset = torchtext.datasets.AG_NEWS(root = "../data", split='train')
+        train_dataset = [(int(item[0])-1, item[1]) for item in train_dataset]
+
+        test_dataset = torchtext.datasets.AG_NEWS(root = "../dataset", split='test')
+        test_dataset = [(int(item[0])-1, item[1]) for item in test_dataset]
+        train_kwargs = {
+        "batch_size": train_batch_size,
+        "shuffle": True}
+
+        test_kwargs = {
+        "batch_size": train_batch_size,
+        "shuffle": True}
+
+        train_loader, vocab = create_text_loader(train_dataset, None, train_kwargs )
+        test_loader, _ = create_text_loader(test_dataset, vocab, test_kwargs)
+        # num_classes = 4
+
+"""
+SpeechCommand
+"""
+
+def prepare_speechcommand(train_batch_size=64, test_batch_size=1024):
+#   elif args.dataset == "SpeechCommand":
+        ## Without Cache
+        train_kwargs = {'batch_size': train_batch_size}
+        test_kwargs = {'batch_size': test_batch_size}
+        train_dataset = SubsetSC("training")
+        test_dataset = SubsetSC("testing")
+        train_loader = get_SC_loader(train_dataset, train_kwargs)
+        test_loader = get_SC_loader(test_dataset, test_kwargs)
+        return train_loader, test_loader
+        
+# if __name__ == "__main__":
+#    train, test = prepare_speechcommand()
+#     waveform, sample_rate = torchaudio.load(r"C:\Users\mmiezianko\Ortho-PolyKAN\data\SpeechCommands\speech_commands_v0.02\_background_noise_\doing_the_dishes.wav")
+#     print(waveform, sample_rate)
+#    print(train)
+#    print("done")
+
+
+"""
+income
+"""
+def prepare_income(train_batch_size=64, test_batch_size=1024):
+        train_dataset, test_dataset = from_uciml_to_dataset(2)
+        train_loader = DataLoader(train_dataset,batch_size=train_batch_size, shuffle=True)
+        test_loader = DataLoader(test_dataset,batch_size=test_batch_size, shuffle=False)
+
+        return train_loader, test_loader
+  
+      
+
+"""
+bean
+"""
+def prepare_bean(train_batch_size=64, test_batch_size=1024):
+        train_dataset, test_dataset = from_uciml_to_dataset(602)
+        train_loader = DataLoader(train_dataset,batch_size=train_batch_size, shuffle=True)
+        test_loader = DataLoader(test_dataset,batch_size=test_batch_size, shuffle=False)
+
+        return train_loader, test_loader
+  
+      
+
+
+"""
+toxicity
+"""
+
+
+def prepare_toxicity(train_batch_size=64, test_batch_size=1024):
+        train_dataset, test_dataset = from_uciml_to_dataset(728)
+        train_loader = DataLoader(train_dataset,batch_size=train_batch_size, shuffle=True)
+        test_loader = DataLoader(test_dataset,batch_size=test_batch_size, shuffle=False)
+
+        return train_loader, test_loader
+        
+    
+"""
+titanic
+"""
+
+def prepare_titanic(train_batch_size=64, test_batch_size=1024):
+
+    train_dataset, test_dataset = TitanicDataset()
+    train_loader = DataLoader(train_dataset,batch_size=train_batch_size, shuffle=True)
+    test_loader = DataLoader(test_dataset,batch_size=test_batch_size, shuffle=False)
+        # num_classes = 2
+        # input_size = 9
+
+    return train_loader, test_loader
+
 
 """
 mnist

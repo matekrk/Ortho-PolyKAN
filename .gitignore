@@ -1,3 +1,8 @@
 data
 models
+wandb_config.yaml
+wandb
+figures_chosen
+src/datasets_preparation/__pycache__
+src/datasets_preparation/MNIST
 src/__pycache__
