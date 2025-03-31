@@ -1,27 +1,42 @@
+
 model_str: "kan_relu_interactions"
 data_str:
-  - "toxicity"
+  
+
   - "titanic"
+ 
 lr:
+  - 0.001
   - 0.0001
+  - 0.00001
 n_epochs:
-  - 50
+  - 10
+  
 train_batch_size:
+  
   - 64
+  - 16
+  
 relu_grid_size:
+  - 2
   - 5
+  - 8
 relu_k:
+  - 2
   - 3
+  - 5
 relu_apply_interactions:
-  - [True, True, False, False]
-  - [False, True, True, False]
+  - [False, False, False]
+  - [True, True, False]
+  - [False, True, False]
 
 widths:
-  - [64,10, 5]
-  - [100, 64, 10]
+
+  - [128, 64]
+  - [64, 32]
 base_activation:
 - "relu"
-cuda: False
+cuda: True
 optimizer_str: "adam"
 objective_str: "ce"
 init_feature_extractor: False

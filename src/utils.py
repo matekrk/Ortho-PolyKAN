@@ -43,8 +43,8 @@ def get_pooling(pooling: str):
 #     return (predicted == label).sum().item() / len(pred)
 
 def classification_accuracy(pred, y):
-    print(f"pred:{pred}")
-    print(f"y:{y}")
+    # print(f"pred:{pred}")
+    # print(f"y:{y}")
     if pred.dim() > 1 and pred.size(1) > 1:  
         _, predicted = torch.max(pred.data, 1)
     else:

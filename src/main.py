@@ -83,6 +83,7 @@ def main():
         print(f"Experiment: testing")
 
     device = "cuda" if args.cuda and torch.cuda.is_available() else "cpu"
+    
     train_loader, test_loader = prepare_data(args.data_str, args.data_path, args.train_batch_size, args.test_batch_size, args.arithmetic_id, args.arithmetic_dim)
     
     start_time = time.time() 

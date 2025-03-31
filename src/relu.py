@@ -98,10 +98,10 @@ class ReLUKANNetwork(nn.Module):
 
     def forward(self, x: torch.Tensor):
 
-        print(f"Input shape before conv: {x.shape}")
+        # print(f"Input shape before conv: {x.shape}")
         x = self.conv_layers(x)
-        print(f"Shape after conv: {x.shape}")
+        # print(f"Shape after conv: {x.shape}")
         x = x.flatten(start_dim=1)
-        print(f"x flatten: {x.shape}")
+        # print(f"x flatten: {x.shape}")
         x = self.layers(x)
         return x.squeeze(dim=-1)

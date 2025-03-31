@@ -89,7 +89,7 @@ def compare():
 
 
 def train_model(model_str, model_params, dataset, args, device):
-    """Trenuje model na danych."""
+
     model = prepare_model(model_str, **model_params)
     optimizer, criterion = prepare_train(model, args.optimizer_str, args.objective_str, args.lr)
 

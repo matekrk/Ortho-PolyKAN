@@ -43,7 +43,7 @@ class CustomReLUKANLayer(ReLUKANLayer):
         x = x1 * x2 * self.r 
         # Eq 12
         x = x * x  
-        print(f"F : {x.shape}") #1568 due to init extractor flag
+        # print(f"F : {x.shape}") #1568 due to init extractor flag
         # Eq 13
         x = x.reshape((len(x), 1, self.grid_size + self.k, self.in_features))
         # print(f"reshaped x : {x.shape}") 
@@ -81,7 +81,7 @@ class CustomReLUKANLayer(ReLUKANLayer):
                 # Jeśli wagi mają wpływać na każdą indywidualną interakcję, używamy sumowania po mnożeniu.
                 # Tu wybrałam drugie podejście
                 weighted_interaction = weighted_interaction.sum(dim=-1)  # Rozmiar: (batch_size, out_features)
-                print(f" weighted interaction summed : {weighted_interaction.shape}") 
+                # print(f" weighted interaction summed : {weighted_interaction.shape}") 
         
                 return phi + weighted_interaction
         else:

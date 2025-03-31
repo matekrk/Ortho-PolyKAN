@@ -2,6 +2,7 @@ data
 models
 wandb_config.yaml
 wandb
+figures
 figures_chosen
 src/datasets_preparation/__pycache__
 src/datasets_preparation/MNIST

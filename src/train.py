@@ -41,7 +41,7 @@ def train(model, train_loader, test_loader, compute_accuracy_fn, criterion, opti
                     total_norm += param_norm.item() ** 2
             total_norm = total_norm ** 0.5  # Norma L2 dla wszystkich gradientów
             epoch_gradient_norms.append(total_norm)
-            print(f"Gradient norm: {total_norm:.4f}")
+            # print(f"Gradient norm: {total_norm:.4f}")
 
 
             optimizer.step()

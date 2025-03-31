@@ -96,7 +96,7 @@ def construct_dataset(x, y):
 
 def split_dataset(dataset):
 
-    train_idx, test_idx = torch.load('C:/Users/mmiezianko/Ortho-PolyKAN/data/uciml_split_idx.pt')
+    train_idx, test_idx = torch.load('./Ortho-PolyKAN/data/uciml_split_idx.pt')
 
     train_idx = torch.tensor(train_idx)
     test_idx = torch.tensor(test_idx)

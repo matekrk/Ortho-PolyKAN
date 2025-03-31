@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
 def TitanicDataset():
-    raw_data = pd.read_csv('C:/Users/mmiezianko/Ortho-PolyKAN/data/Titanic/titanic.csv')
+    raw_data = pd.read_csv('./data/Titanic/titanic.csv')
     raw_data = raw_data.drop(['Name', 'PassengerId'], axis=1)
 
     category_feature = ['Sex','Ticket','Cabin','Embarked']
